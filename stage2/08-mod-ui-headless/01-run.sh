@@ -23,6 +23,25 @@ python3 -m venv "$MODUI_DIR/.venv"
 # NOTE: this can take a bit, but now that rootfs expands it’s fine.
 PIP_DISABLE_PIP_VERSION_CHECK=1 "$MODUI_DIR/.venv/bin/pip" install -r "$MODUI_DIR/requirements.txt"
 
+"$MODUI_DIR/.venv/bin/python" -m pip install -U "pyserial>=3.5"
+
+#
+
+# Patch Tornado 4.3 for Python 3.11+ without importing tornado (import would crash)
+HTTPTUTIL="$(ls -1 "$MODUI_DIR"/.venv/lib/python3*/site-packages/tornado/httputil.py | head -n1)"
+echo "Patching: $HTTPTUTIL"
+
+if [ -f "$HTTPTUTIL" ]; then
+  sed -i 's/collections.MutableMapping/collections.abc.MutableMapping/g' "$HTTPTUTIL"
+else
+  echo "ERROR: tornado/httputil.py not found in venv" >&2
+  exit 1
+fi
+
+
+PATH="$MODUI_DIR/.venv/bin:$PATH" make -C "$MODUI_DIR/utils"
+
+
 # Systemd service (headless controller)
 cat >/etc/systemd/system/mod-ui.service <<SERVICE
 [Unit]
@@ -35,9 +54,10 @@ WorkingDirectory=$MODUI_DIR
 # Bind to localhost only (headless controller; expose via SSH tunnel if needed)
 Environment=MOD_UI_HOST=$MODUI_BIND
 Environment=MOD_UI_PORT=$MODUI_PORT
-ExecStart=$MODUI_DIR/.venv/bin/python $MODUI_DIR/mod-ui
+ExecStart=$MODUI_DIR/.venv/bin/python $MODUI_DIR/server.py
 Restart=on-failure
-User=root
+User=pi
+Group=audio
 
 [Install]
 WantedBy=multi-user.target
