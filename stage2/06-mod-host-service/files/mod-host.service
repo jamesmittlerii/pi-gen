@@ -1,0 +1,28 @@
+[Unit]
+Description=mod-host LV2 host (headless)
+After=jack.service sound.target
+Wants=jack.service
+
+[Service]
+Type=forking
+
+# MUST match JACK user
+User=pi
+Group=audio
+
+# Correct binary location
+ExecStart=/usr/local/bin/mod-host -p 5555
+#ExecStartPost=/usr/local/bin/mod-host-init.sh
+
+Restart=on-failure
+RestartSec=2
+
+# Real-time / audio privileges
+LimitRTPRIO=95
+LimitMEMLOCK=infinity
+
+# Hardening (safe)
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

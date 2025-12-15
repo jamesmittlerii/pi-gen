@@ -1,0 +1,9 @@
+build-essential
+cmake
+git
+libjack-jackd2-dev
+libsndfile1-dev
+libsamplerate0-dev
+libatomic1
+libabsl-dev
+

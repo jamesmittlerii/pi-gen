@@ -1,0 +1,11 @@
+git
+ca-certificates
+cmake
+ninja-build
+pkg-config
+build-essential
+
+lv2-dev
+libsndfile1-dev
+libjack-jackd2-dev
+libsamplerate0-dev
