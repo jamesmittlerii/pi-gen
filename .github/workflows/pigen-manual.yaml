@@ -1,0 +1,52 @@
+name: pi-gen manual build (debian)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    container:
+      image: debian:bookworm
+      options: --privileged
+
+    timeout-minutes: 360
+
+    steps:
+      - name: Install base dependencies
+        run: |
+          set -eux
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            sudo git ca-certificates curl \
+            coreutils quilt parted qemu-user-static debootstrap zerofree \
+            zip dosfstools libarchive-tools rsync xz-utils \
+            bc bison flex libssl-dev make \
+            pigz
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Clean previous outputs
+        run: |
+          rm -rf work deploy || true
+
+      - name: Build pi-gen image
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          ./build.sh
+
+      - name: Compress image
+        run: |
+          apt-get install -y zstd
+          IMG="$(ls -1 deploy/*.img | head -n 1)"
+          zstd -T0 -10 "$IMG" -o "${IMG}.zst"
+
+      - name: Upload artifact (best effort)
+        uses: actions/upload-artifact@v4
+        with:
+          name: pigen-image
+          path: deploy/*.zst
+          retention-days: 7
