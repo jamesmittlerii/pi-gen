@@ -10,6 +10,9 @@ Type=forking
 User=pi
 Group=audio
 
+Environment=LV2_PATH=/usr/local/lib/lv2:/usr/lib/lv2
+Environment=LV2_PATH=${LV2_PATH}:/home/pi/.lv2
+
 # Correct binary location
 ExecStart=/usr/local/bin/mod-host -p 5555
 #ExecStartPost=/usr/local/bin/mod-host-init.sh
