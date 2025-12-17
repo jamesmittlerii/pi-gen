@@ -6,14 +6,16 @@ on:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    timeout-minutes: 360
 
     container:
       image: debian:bookworm
       options: --privileged
 
-    timeout-minutes: 360
-
     steps:
+      # ------------------------------------------------------------
+      # Base system deps + pi-gen deps (explicit, complete)
+      # ------------------------------------------------------------
       - name: Install base dependencies
         run: |
           set -eux
@@ -22,31 +24,60 @@ jobs:
             sudo git ca-certificates curl \
             coreutils quilt parted qemu-user-static debootstrap zerofree \
             zip dosfstools libarchive-tools rsync xz-utils \
-            bc bison flex libssl-dev make \
-            pigz
+            bc bison flex libssl-dev make pigz \
+            libcap2-bin xxd file kmod gpg arch-test
 
-      - name: Checkout repo
+      # ------------------------------------------------------------
+      # Checkout repo
+      # ------------------------------------------------------------
+      - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ------------------------------------------------------------
+      # Fix Git "dubious ownership" (container + Actions quirk)
+      # ------------------------------------------------------------
+      - name: Mark workspace as safe for git
+        run: |
+          set -eux
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global --add safe.directory /__w/pi-gen/pi-gen
+
+      # ------------------------------------------------------------
+      # Clean previous build outputs (idempotent)
+      # ------------------------------------------------------------
       - name: Clean previous outputs
         run: |
           rm -rf work deploy || true
 
+      # ------------------------------------------------------------
+      # Run pi-gen build
+      # ------------------------------------------------------------
       - name: Build pi-gen image
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
+          set -eux
           ./build.sh
 
-      - name: Compress image
+      # ------------------------------------------------------------
+      # Compress result (best-effort; may fail on disk)
+      # ------------------------------------------------------------
+      - name: Compress image (zstd)
         run: |
-          apt-get install -y zstd
+          set -eux
+          apt-get install -y --no-install-recommends zstd
           IMG="$(ls -1 deploy/*.img | head -n 1)"
           zstd -T0 -10 "$IMG" -o "${IMG}.zst"
+          ls -lh "${IMG}.zst"
 
-      - name: Upload artifact (best effort)
+      # ------------------------------------------------------------
+      # Upload artifact (best-effort; may hit size limits)
+      # ------------------------------------------------------------
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: pigen-image
-          path: deploy/*.zst
+          path: |
+            deploy/*.zst
+            deploy/*.log
           retention-days: 7
