@@ -75,7 +75,7 @@ jobs:
           set -euxo pipefail
           sudo apt-get install -y --no-install-recommends zstd
           IMG="$(ls -1 deploy/*.img | head -n 1)"
-          zstd -T0 -10 "$IMG" -o "${IMG}.zst"
+          sudo zstd -T0 -10 "$IMG" -o "${IMG}.zst"
           ls -lh "${IMG}.zst"
 
       - name: Upload artifact (best effort)
