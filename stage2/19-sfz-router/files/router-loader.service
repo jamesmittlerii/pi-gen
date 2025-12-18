@@ -30,7 +30,7 @@ ExecStart=/usr/bin/python3 /opt/router/load_single.py ${ROUTER_CONFIG}
 # Small delay to avoid racing mod-host/JACK port creation
 #ExecStartPre=/bin/sleep 2
 ExecStartPre=/bin/bash -lc 'for i in $(seq 1 50); do nc -z 127.0.0.1 5555 && exit 0; sleep 0.1; done; echo "mod-host not ready" >&2; exit 1'
-#ExecStart=/usr/bin/python3 /opt/router/load_single.py "${ROUTER_CONFIG:-/opt/router/jsons/wah.json}"
+#ExecStart=/usr/bin/python3 -u /opt/router/load_single.py "${ROUTER_CONFIG:-/opt/router/jsons/wah.json}"
 
 Restart=on-failure
 RestartSec=2
