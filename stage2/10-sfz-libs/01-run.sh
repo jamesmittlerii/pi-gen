@@ -182,7 +182,7 @@ rsync_dir "$WORK/K18-Upright-Piano/" "$PIANOS/K18-Upright-Piano/"
 # ------------------------------------------------------------------------------
 
 clone_fresh \
-  https://github.com/sfzinstruments/GregSullivan.E-Pianos \
+  https://github.com/jamesmittlerii/GregSullivan.E-Pianos.git \
   "$WORK/GregSullivan.E-Pianos"
 rm -rf "$WORK/GregSullivan.E-Pianos/.git"
 
