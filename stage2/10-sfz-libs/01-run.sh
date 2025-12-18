@@ -203,7 +203,7 @@ clone_fresh \
   https://github.com/jamesmittlerii/Wurlitzer.git \
   "$WORK/Wurlitzer"
 rm -rf "$WORK/Wurlitzer/.git"
-rsync_dir "$WORK/Wurlitzer/" "$PIANOS/Wurlitzer/"
+rsync_dir "$WORK/Wurlitzer/" "$EPIANOS/Wurlitzer/"
 
 #WURL_ZIP="$WORK/Wurlitzer.zip"
 #download \
