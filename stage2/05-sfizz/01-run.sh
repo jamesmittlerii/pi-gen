@@ -1,24 +1,33 @@
+#!/bin/bash -e
+
 on_chroot <<'EOF'
-set -e
+set -euo pipefail
 
 cd /usr/src
 
-if [ -d sfizz ]; then
-  echo "sfizz source already exists, updating"
-  cd sfizz
-  git fetch --depth=1 origin
-  git reset --hard origin/HEAD
-else
-  git clone --depth=1 https://github.com/sfztools/sfizz.git
-  cd sfizz
-fi
+rm -rf sfizz-ui
 
-cmake -S . -B build \
+# IMPORTANT: pull submodules (contains the CMake helpers like BuildType/OptionEx)
+git clone --recurse-submodules --shallow-submodules https://github.com/sfztools/sfizz-ui.git
+cd sfizz-ui
+
+# If you prefer depth=1, keep it, but still recurse submodules:
+# git clone --depth=1 --recurse-submodules --shallow-submodules https://github.com/sfztools/sfizz-ui.git
+
+rm -rf build
+
+cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX=/usr \
   -DSFIZZ_JACK=ON \
-  -DSFIZZ_SHARED=ON
+  -DSFIZZ_SHARED=ON \
+  -DSFIZZ_RENDER=OFF \
+  -DPLUGIN_LV2=ON \
+  -DPLUGIN_LV2_UI=OFF \
+  -DPLUGIN_VST3=OFF
 
-cmake --build build -j$(nproc)
+cmake --build build -j"$(nproc)"
 cmake --install build
 ldconfig
+
 EOF
