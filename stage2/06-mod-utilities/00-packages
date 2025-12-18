@@ -1,5 +1,0 @@
-build-essential
-git
-pkg-config
-lv2-dev
-netcat-openbsd

@@ -1,9 +1,0 @@
-git
-python3-full
-python3-venv
-python3-pip
-build-essential
-python3-dev
-libffi-dev
-libssl-dev
-libjack-jackd2-dev
