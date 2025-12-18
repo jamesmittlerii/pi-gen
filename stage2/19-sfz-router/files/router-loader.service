@@ -2,6 +2,8 @@
 Description=SFZ Router (load mod-host chain from JSON)
 After=mod-host.service jack.service sound.target
 Wants=mod-host.service jack.service
+PartOf=jack.service mod-host.service
+BindsTo=jack.service mod-host.service
 
 [Service]
 Type=simple
