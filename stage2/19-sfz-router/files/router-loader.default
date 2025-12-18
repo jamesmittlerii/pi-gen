@@ -1,0 +1,2 @@
+# Default router JSON config
+ROUTER_CONFIG=/opt/router/jsons/wah.json

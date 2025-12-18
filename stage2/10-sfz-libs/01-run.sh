@@ -150,25 +150,32 @@ clone_fresh \
 rm -rf "$WORK/SalamanderGrandPiano/.git"
 rsync_dir "$WORK/SalamanderGrandPiano/" "$PIANOS/SalamanderGrandPiano/"
 
-# K18 Upright (tar.xz)
-K18_TAR="$WORK/K18-Upright-Piano.tar.xz"
-download \
-  https://archive.org/download/K18UprightPiano/K18-Upright-Piano.tar.xz \
-  "$K18_TAR"
+# K18 (clone -> copy to final without .git)
+clone_fresh \
+  https://github.com/jamesmittlerii/K18.git \
+  "$WORK/K18-Upright-Piano"
+rm -rf "$WORK/K18-Upright-Piano/.git"
+rsync_dir "$WORK/K18-Upright-Piano/" "$PIANOS/K18-Upright-Piano/"
 
-extract_tar_xz_to "$K18_TAR" "$PIANOS/K18-Upright-Piano"
+# K18 Upright (tar.xz)
+#K18_TAR="$WORK/K18-Upright-Piano.tar.xz"
+#download \
+#  https://archive.org/download/K18UprightPiano/K18-Upright-Piano.tar.xz \
+#  "$K18_TAR"
+
+#extract_tar_xz_to "$K18_TAR" "$PIANOS/K18-Upright-Piano"
 
 # Ensure SFZ is at library root (some archives vary)
-k18root="$PIANOS/K18-Upright-Piano"
-sfz_found="$(find "$k18root" -maxdepth 4 -type f -iname '*.sfz' | head -n 1 || true)"
-if [ -z "$sfz_found" ]; then
-  echo "WARN: No .sfz found in K18-Upright-Piano (archive may be samples-only?)"
-else
-  if [ "$(dirname "$sfz_found")" != "$k18root" ]; then
-    cp -a "$sfz_found" "$k18root/"
-  fi
-fi
-chmod -R a+rX "$k18root"
+#k18root="$PIANOS/K18-Upright-Piano"
+#sfz_found="$(find "$k18root" -maxdepth 4 -type f -iname '*.sfz' | head -n 1 || true)"
+#if [ -z "$sfz_found" ]; then
+#  echo "WARN: No .sfz found in K18-Upright-Piano (archive may be samples-only?)"
+#else
+#  if [ "$(dirname "$sfz_found")" != "$k18root" ]; then
+#    cp -a "$sfz_found" "$k18root/"
+#  fi
+#fi
+#chmod -R a+rX "$k18root"
 
 # ------------------------------------------------------------------------------
 # E-PIANOS: GregSullivan.E-Pianos (CP80, Pianet T, Wurlitzer EP200)
@@ -191,26 +198,33 @@ done
 # E-PIANOS: Wurlitzer.zip (Musical Artifacts)
 # ------------------------------------------------------------------------------
 
-WURL_ZIP="$WORK/Wurlitzer.zip"
-download \
-  https://musical-artifacts.com/artifacts/645/Wurlitzer.zip \
-  "$WURL_ZIP"
+# Wurlitzer (clone -> copy to final without .git)
+clone_fresh \
+  https://github.com/jamesmittlerii/Wurlitzer.git \
+  "$WORK/Wurlitzer"
+rm -rf "$WORK/Wurlitzer/.git"
+rsync_dir "$WORK/Wurlitzer/" "$PIANOS/Wurlitzer/"
 
-extract_zip_to "$WURL_ZIP" "$EPIANOS/Wurlitzer"
+#WURL_ZIP="$WORK/Wurlitzer.zip"
+#download \
+#  https://musical-artifacts.com/artifacts/645/Wurlitzer.zip \
+#  "$WURL_ZIP"
+
+#extract_zip_to "$WURL_ZIP" "$EPIANOS/Wurlitzer"
 # Remove macOS metadata
-rm -rf "$EPIANOS/Wurlitzer/__MACOSX" || true
+#rm -rf "$EPIANOS/Wurlitzer/__MACOSX" || true
 # Flatten if nested folder named Wurlitzer exists
-if [ -d "$EPIANOS/Wurlitzer/Wurlitzer" ]; then
-  echo "Flattening nested Wurlitzer directory"
-  tmp="$EPIANOS/Wurlitzer/.tmp_flatten"
-  rm -rf "$tmp"
-  mkdir -p "$tmp"
-  cp -a "$EPIANOS/Wurlitzer/Wurlitzer/." "$tmp/"
-  rm -rf "$EPIANOS/Wurlitzer/Wurlitzer"
-  cp -a "$tmp/." "$EPIANOS/Wurlitzer/"
-  rm -rf "$tmp"
-fi
-chmod -R a+rX "$EPIANOS/Wurlitzer"
+#if [ -d "$EPIANOS/Wurlitzer/Wurlitzer" ]; then
+#  echo "Flattening nested Wurlitzer directory"
+#  tmp="$EPIANOS/Wurlitzer/.tmp_flatten"
+#  rm -rf "$tmp"
+#  mkdir -p "$tmp"
+#  cp -a "$EPIANOS/Wurlitzer/Wurlitzer/." "$tmp/"
+#  rm -rf "$EPIANOS/Wurlitzer/Wurlitzer"
+#  cp -a "$tmp/." "$EPIANOS/Wurlitzer/"
+#  rm -rf "$tmp"
+#fi
+#chmod -R a+rX "$EPIANOS/Wurlitzer"
 
 # ------------------------------------------------------------------------------
 # E-PIANOS: jlearman.jRhodes3d

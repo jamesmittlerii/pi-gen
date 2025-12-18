@@ -2,3 +2,7 @@ jackd2
 jack-tools
 alsa-utils
 rt-tests
+python3-mido
+python3-jack-client
+jalv
+
