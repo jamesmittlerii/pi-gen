@@ -14,6 +14,7 @@ Group=audio
 #Environment=LV2_PATH=${LV2_PATH}:/home/pi/.lv2
 
 # Correct binary location
+ExecStartPre=/usr/bin/jack_wait -w
 ExecStart=/usr/local/bin/mod-host -p 5555
 #ExecStartPost=/usr/local/bin/mod-host-init.sh
 
