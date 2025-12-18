@@ -2,6 +2,8 @@
 Description=mod-host LV2 host (headless)
 After=jack.service sound.target
 Wants=jack.service
+BindsTo=jack.service
+PartOf=jack.service
 
 [Service]
 Type=forking
