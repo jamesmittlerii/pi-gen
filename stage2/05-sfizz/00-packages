@@ -1,9 +1,15 @@
 build-essential
+ca-certificates
 cmake
 git
+ninja-build
+pkg-config
+build-essential
+
 libjack-jackd2-dev
 libsndfile1-dev
 libsamplerate0-dev
 libatomic1
 libabsl-dev
+lv2-dev
 
