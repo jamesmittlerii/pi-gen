@@ -93,12 +93,21 @@ jobs:
           set -euxo pipefail
           ls -lh deploy/*.img.xz
 
+      - name: Split image for GitHub release
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd deploy
+          IMG="$(ls *.img.xz)"
+          split -b 1900M "$IMG" "$IMG.part-"
+          ls -lh "$IMG".part-*    
+
       - name: Upload image to release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           name: Pi-gen Image ${{ steps.tag.outputs.tag }}
-          files: deploy/*.img.xz
+          files: deploy/*.img.xz.part-*
           overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
