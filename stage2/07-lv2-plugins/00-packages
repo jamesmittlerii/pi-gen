@@ -9,3 +9,6 @@ lv2-dev
 libsndfile1-dev
 libjack-jackd2-dev
 libsamplerate0-dev
+
+libcairo2-dev
+libfluidsynth-dev
