@@ -205,6 +205,13 @@ clone_fresh \
 rm -rf "$WORK/Wurlitzer/.git"
 rsync_dir "$WORK/Wurlitzer/" "$EPIANOS/Wurlitzer/"
 
+# Clavinet (clone -> copy to final without .git)
+clone_fresh \
+  https://github.com/jamesmittlerii/Clavinet.git \
+  "$WORK/Clavinet"
+rm -rf "$WORK/Clavinet/.git"
+rsync_dir "$WORK/Clavinet/" "$EPIANOS/Clavinet/"
+
 #WURL_ZIP="$WORK/Wurlitzer.zip"
 #download \
 #  https://musical-artifacts.com/artifacts/645/Wurlitzer.zip \
