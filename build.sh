@@ -180,9 +180,17 @@ export RELEASE=${RELEASE:-bookworm} # Don't forget to update stage0/prerun.sh
 export IMG_NAME="${IMG_NAME:-raspios-$RELEASE-$ARCH}"
 
 export USE_QEMU="${USE_QEMU:-0}"
+# Date (existing behavior)
 export IMG_DATE="${IMG_DATE:-"$(date +%Y-%m-%d)"}"
-export IMG_FILENAME="${IMG_FILENAME:-"${IMG_DATE}-${IMG_NAME}"}"
-export ARCHIVE_FILENAME="${ARCHIVE_FILENAME:-"image_${IMG_DATE}-${IMG_NAME}"}"
+
+# Build identifier: GitHub run number or LOCAL
+BUILD_ID="${GITHUB_RUN_NUMBER:-LOCAL}"
+
+# Image filename
+export IMG_FILENAME="${IMG_FILENAME:-"${IMG_DATE}-${IMG_NAME}-${BUILD_ID}"}"
+
+# Archive filename
+export ARCHIVE_FILENAME="${ARCHIVE_FILENAME:-"image_${IMG_DATE}-${IMG_NAME}-${BUILD_ID}"}"
 
 export SCRIPT_DIR="${BASE_DIR}/scripts"
 export WORK_DIR="${WORK_DIR:-"${BASE_DIR}/work/${IMG_NAME}"}"
