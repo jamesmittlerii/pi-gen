@@ -79,10 +79,7 @@ jobs:
           sudo zstd -T0 -10 "$IMG" -o "${IMG}.zst"
           ls -lh "${IMG}.zst"
 
-      - name: Upload image artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload image to release
+        uses: softprops/action-gh-release@v2
         with:
-          name: pigen-image
-          path: deploy/*.img.xz
-          if-no-files-found: error
-          retention-days: 7
+          files: deploy/*.img.xz
