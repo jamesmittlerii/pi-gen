@@ -45,7 +45,6 @@ jobs:
         run: |
           set -euxo pipefail
           sudo modprobe binfmt_misc
-          # Ensure binfmt mount exists (usually does after modprobe)
           if [ ! -d /proc/sys/fs/binfmt_misc ]; then
             echo "binfmt_misc not available"
             exit 1
@@ -93,21 +92,46 @@ jobs:
           set -euxo pipefail
           ls -lh deploy/*.img.xz
 
-      - name: Split image for GitHub release
+      - name: Generate checksums
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sha256sum deploy/*.img.xz > deploy/SHA256SUMS.txt
+          cat deploy/SHA256SUMS.txt
+
+      - name: Split image for GitHub release (<2GiB per part)
         shell: bash
         run: |
           set -euxo pipefail
           cd deploy
-          IMG="$(ls *.img.xz)"
+          IMG="$(ls -1 *.img.xz | head -n 1)"
+          # Keep parts safely under GitHub's 2GiB release-asset limit
           split -b 1900M "$IMG" "$IMG.part-"
-          ls -lh "$IMG".part-*    
+          ls -lh "$IMG".part-*
 
-      - name: Upload image to release
+      - name: Upload split image + checksums to release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           name: Pi-gen Image ${{ steps.tag.outputs.tag }}
-          files: deploy/*.img.xz.part-*
+          body: |
+            This release contains the pi-gen image split into <2GiB parts due to GitHub Release asset limits.
+
+            Reassemble on Linux/macOS:
+            ```bash
+            cat image*.img.xz.part-* > image.img.xz
+            sha256sum -c SHA256SUMS.txt
+            xz -t image.img.xz
+            ```
+
+            Then flash `image.img` after decompressing:
+            ```bash
+            xz -d image.img.xz
+            # flash image.img with Raspberry Pi Imager or dd
+            ```
+          files: |
+            deploy/*.img.xz.part-*
+            deploy/SHA256SUMS.txt
           overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
