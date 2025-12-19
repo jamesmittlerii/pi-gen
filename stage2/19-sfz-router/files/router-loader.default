@@ -1,2 +1,2 @@
 # Default router JSON config
-ROUTER_CONFIG=/opt/router/jsons/clav.json
+ROUTER_CONFIG=/opt/router/jsons/default.json
