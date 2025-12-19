@@ -70,6 +70,7 @@ jobs:
           sudo ./build.sh
 
       - name: Compress image (zstd)
+        if: false
         shell: bash
         run: |
           set -euxo pipefail
@@ -83,6 +84,6 @@ jobs:
         with:
           name: pigen-image
           path: |
-            deploy/*.zst
+            deploy/*.xz
             deploy/*.log
           retention-days: 7
