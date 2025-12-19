@@ -144,7 +144,7 @@ mkdir -p "$WORK"
 # PIANOS
 # ------------------------------------------------------------------------------
 
-CLAV_SF2="$EPIANOS/Clavinet/Clavinet_List.sf2"
+CLAV_SF2="$EPIANOS/Clavinet/Clavinet_Lit.sf2"
 download \
   https://musical-artifacts.com/artifacts/2347/Clavinet_Lit.sf2 "$CLAV_SF2"
 
