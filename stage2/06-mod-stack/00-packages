@@ -3,6 +3,7 @@ git
 pkg-config
 lv2-dev
 netcat-openbsd
+ca-certificates
 
 libjack-jackd2-dev
 liblilv-dev
@@ -10,14 +11,12 @@ lilv-utils
 libreadline-dev
 libfftw3-dev
 
-# LV2 plugins
 lsp-plugins-lv2
 calf-plugins
 invada-studio-plugins-lv2
 swh-lv2
 dragonfly-reverb
 zam-plugins
-
 
 python3-full
 python3-venv
