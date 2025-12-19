@@ -3,6 +3,9 @@ name: pi-gen manual build (hosted runner)
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -69,17 +72,33 @@ jobs:
           set -euxo pipefail
           sudo ./build.sh
 
-      - name: Compress image (zstd)
-        if: false
+      - name: Generate tag (run_number)
+        id: tag
         shell: bash
         run: |
           set -euxo pipefail
-          sudo apt-get install -y --no-install-recommends zstd
-          IMG="$(ls -1 deploy/*.img | head -n 1)"
-          sudo zstd -T0 -10 "$IMG" -o "${IMG}.zst"
-          ls -lh "${IMG}.zst"
+          TAG="pi-gen-${{ github.run_number }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push tag
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git tag "${{ steps.tag.outputs.tag }}"
+          git push origin "${{ steps.tag.outputs.tag }}"
+
+      - name: Verify image exists
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ls -lh deploy/*.img.xz
 
       - name: Upload image to release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Pi-gen Image ${{ steps.tag.outputs.tag }}
           files: deploy/*.img.xz
+          overwrite_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
