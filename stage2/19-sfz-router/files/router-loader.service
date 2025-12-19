@@ -22,6 +22,9 @@ TimeoutStopSec=15
 
 WorkingDirectory=/opt/router
 
+StateDirectory=router
+StateDirectoryMode=0750
+
 EnvironmentFile=-/etc/default/router-loader
 Environment=ROUTER_CONFIG=/opt/router/jsons/default.json
 ExecStartPre=/bin/bash -lc 'for i in $(seq 1 50); do nc -z 127.0.0.1 5555 && exit 0; sleep 0.1; done; echo "mod-host not ready" >&2; exit 1'
