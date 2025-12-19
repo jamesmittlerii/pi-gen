@@ -79,11 +79,10 @@ jobs:
           sudo zstd -T0 -10 "$IMG" -o "${IMG}.zst"
           ls -lh "${IMG}.zst"
 
-      - name: Upload artifact (best effort)
+      - name: Upload image artifact
         uses: actions/upload-artifact@v4
         with:
           name: pigen-image
-          path: |
-            deploy/*.xz
-            deploy/*.log
+          path: deploy/*.img.xz
+          if-no-files-found: error
           retention-days: 7
