@@ -67,6 +67,9 @@ jobs:
         shell: bash
         env:
           DEBIAN_FRONTEND: noninteractive
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          GITHUB_RUN_ID:     ${{ github.run_id }}
+          GITHUB_SHA:        ${{ github.sha }}
         run: |
           set -euxo pipefail
           sudo ./build.sh
@@ -129,6 +132,42 @@ jobs:
             xz -d image.img.xz
             # flash image.img with Raspberry Pi Imager or dd
             ```
+            ```powershell
+            # Read the expected .img.xz filename from SHA256SUMS.txt
+            # Supports formats like:
+            #   <hash>  filename
+            #   <hash> *filename
+            $line = Get-Content .\SHA256SUMS.txt |
+              Where-Object { $_ -match "\.img\.xz(\s|$)" } |
+              Select-Object -First 1
+            
+            if (-not $line) {
+              throw "No .img.xz entry found in SHA256SUMS.txt"
+            }
+            
+            $parts = $line.Trim() -split "\s+"
+            $expectedHash = $parts[0].ToLower()
+            $target = ($parts[-1] -replace '^\*','')
+            
+            Write-Host "Target: $target"
+            Write-Host "Expected SHA256: $expectedHash"
+            
+            # Reassemble split parts (fast + binary-safe)
+            cmd /c "copy /b $target.part-* $target" | Out-Null
+            
+            # Verify SHA256
+            $actualHash = (Get-FileHash ".\$target" -Algorithm SHA256).Hash.ToLower()
+            if ($actualHash -ne $expectedHash) {
+              throw "SHA256 mismatch! expected=$expectedHash actual=$actualHash"
+            }
+            Write-Host "SHA256 OK"
+            
+            # Test the .xz archive (requires xz.exe or 7z.exe in PATH)
+            # xz -t ".\$target"
+            # OR
+            # 7z t ".\$target"
+            ```
+
           files: |
             deploy/*.img.xz.part-*
             deploy/SHA256SUMS.txt
