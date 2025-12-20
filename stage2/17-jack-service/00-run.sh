@@ -1,11 +1,13 @@
 #!/bin/bash -e
 
 # Hardened JACK setup for headless / appliance builds.
-# - Config-driven device selection via /etc/jack/jack.env
-# - Waits for ALSA device (handles USB enumeration timing)
-# - Disables JACK audio reservation (avoids dbus/session issues)
+# - Defaults via /etc/default/jack (installed from stage files/)
+# - systemd service installed from stage files/jack.service
+# - jack-start wrapper reads env vars passed by systemd (no implicit sourcing)
+# - Waits for ALSA card (USB enumeration timing)
+# - Disables JACK audio reservation
 # - Sets RT limits
-# - Installs systemd service and enables it
+# - Enables jack.service
 
 # ---- Realtime permissions (JACK) ----
 cat > "${ROOTFS_DIR}/etc/security/limits.d/audio.conf" <<'EOF'
@@ -22,39 +24,20 @@ if getent passwd pi >/dev/null; then
 fi
 EOF
 
-# ---- Config file (easy to change later) ----
-install -d -m 0755 "${ROOTFS_DIR}/etc/jack"
+# ---- Install default config from stage files/ ----
+install -d -m 0755 "${ROOTFS_DIR}/etc/default"
+install -m 0644 "${STAGE_DIR}/files/jack.default" \
+  "${ROOTFS_DIR}/etc/default/jack"
 
-cat > "${ROOTFS_DIR}/etc/jack/jack.env" <<'EOF'
-# Device selector (change this later if you swap DACs)
-# Examples:
-#   JACK_DEVICE=hw:CARD=SL
-#   JACK_DEVICE=hw:USB
-#   JACK_DEVICE=hw:0
-JACK_DEVICE=hw:CARD=SL
+# ---- Install systemd unit from stage files/ ----
+install -d -m 0755 "${ROOTFS_DIR}/etc/systemd/system"
+install -m 0644 "${STAGE_DIR}/files/jack.service" \
+  "${ROOTFS_DIR}/etc/systemd/system/jack.service"
 
-# Zynthian-proven baseline
-JACK_RATE=48000
-JACK_PERIOD=128
-JACK_NPERIODS=2
-JACK_PRIORITY=70
-
-# Optional toggles
-JACK_SYNC=1            # 1 => add -S
-JACK_ALSA_MIDI=raw     # adds: -X raw (set empty to disable)
-
-# Optional extra flags (if you still want Zynthian's -s, keep it here)
-JACK_EXTRA_FLAGS="-s"
-EOF
-chmod 0644 "${ROOTFS_DIR}/etc/jack/jack.env"
-
-# ---- Wrapper that reads /etc/jack/jack.env ----
+# ---- jack-start wrapper (no config-file sourcing; systemd provides env) ----
 cat > "${ROOTFS_DIR}/usr/local/bin/jack-start" <<'EOF'
 #!/bin/bash
 set -euo pipefail
-
-ENVFILE=/etc/jack/jack.env
-[ -f "$ENVFILE" ] && source "$ENVFILE"
 
 : "${JACK_DEVICE:=hw:0}"
 : "${JACK_RATE:=48000}"
@@ -104,38 +87,8 @@ exec /usr/bin/jackd \
 EOF
 chmod 0755 "${ROOTFS_DIR}/usr/local/bin/jack-start"
 
-# ---- systemd service ----
-cat > "${ROOTFS_DIR}/etc/systemd/system/jack.service" <<'EOF'
-[Unit]
-Description=JACK Audio Daemon (configurable)
-After=sound.target
-Wants=sound.target
-
-[Service]
-Type=simple
-User=pi
-Group=audio
-
-# Let JACK get realtime + lock memory
-LimitRTPRIO=95
-LimitMEMLOCK=infinity
-
-# Don’t restart-storm forever if the DAC is unplugged
-Restart=on-failure
-RestartSec=2
-StartLimitIntervalSec=30
-StartLimitBurst=5
-
-ExecStart=/usr/local/bin/jack-start
-
-[Install]
-WantedBy=multi-user.target
-EOF
-chmod 0644 "${ROOTFS_DIR}/etc/systemd/system/jack.service"
-
-# Enable in the image
+# ---- Enable in the image ----
 on_chroot <<'EOF'
 systemctl daemon-reload
 systemctl enable jack.service
 EOF
-
