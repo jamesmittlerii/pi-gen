@@ -7,7 +7,7 @@ ENABLE_CLOUD_INIT=0
 WPA_COUNTRY=US
 
 PI_GEN_REPO=https://github.com/jamesmittlerii/pi-gen
-PI_GEN_RELEASE=SL88GT engine
+PI_GEN_RELEASE="SL88GT engine"
 
 LOCALE_DEFAULT=en_US.UTF-8
 KEYBOARD_KEYMAP=us
