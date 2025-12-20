@@ -7,10 +7,21 @@ install -m 644 files/50raspi		"${ROOTFS_DIR}/etc/apt/apt.conf.d/"
 install -m 644 files/console-setup   	"${ROOTFS_DIR}/etc/default/"
 
 if [ -n "${PUBKEY_SSH_FIRST_USER}" ]; then
-	install -v -m 0700 -o 1000 -g 1000 -d "${ROOTFS_DIR}"/home/"${FIRST_USER_NAME}"/.ssh
-	echo "${PUBKEY_SSH_FIRST_USER}" >"${ROOTFS_DIR}"/home/"${FIRST_USER_NAME}"/.ssh/authorized_keys
-	chown 1000:1000 "${ROOTFS_DIR}"/home/"${FIRST_USER_NAME}"/.ssh/authorized_keys
-	chmod 0600 "${ROOTFS_DIR}"/home/"${FIRST_USER_NAME}"/.ssh/authorized_keys
+	install -v -m 0700 -o 1000 -g 1000 \
+		-d "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.ssh"
+
+	echo "${PUBKEY_SSH_FIRST_USER}" \
+		> "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.ssh/authorized_keys"
+
+	chown 1000:1000 \
+		"${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.ssh/authorized_keys"
+	chmod 0600 \
+		"${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.ssh/authorized_keys"
+
+	# Mark first-user setup complete (silences raspi-config SSH nag)
+	install -d -m 0755 "${ROOTFS_DIR}/etc/raspberrypi"
+	install -m 0644 /dev/null \
+		"${ROOTFS_DIR}/etc/raspberrypi/first_user_done"
 fi
 
 if [ "${PUBKEY_ONLY_SSH}" = "1" ]; then
