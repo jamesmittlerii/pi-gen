@@ -72,7 +72,7 @@ jobs:
           GITHUB_SHA:        ${{ github.sha }}
         run: |
           set -euxo pipefail
-          sudo ./build.sh
+          sudo -E ./build.sh
 
       - name: Generate tag (run_number)
         id: tag
