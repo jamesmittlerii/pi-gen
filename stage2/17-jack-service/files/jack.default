@@ -1,0 +1,122 @@
+#!/bin/bash -e
+
+# Hardened JACK setup for headless / appliance builds.
+# - Debian-style config via /etc/default/jack (installed from stage files/)
+# - systemd EnvironmentFile drives config (no implicit sourcing in wrapper)
+# - Waits for ALSA card to appear (USB enumeration timing)
+# - Disables JACK audio reservation (avoids dbus/session issues)
+# - Sets RT limits
+# - Installs systemd service and enables it
+
+# ---- Realtime permissions (JACK) ----
+cat > "${ROOTFS_DIR}/etc/security/limits.d/audio.conf" <<'EOF'
+@audio   -  rtprio     95
+@audio   -  memlock    unlimited
+@audio   -  nice      -10
+EOF
+
+# Add default user to audio group (pi-gen usually creates 'pi')
+on_chroot <<'EOF'
+set -e
+if getent passwd pi >/dev/null; then
+  usermod -aG audio pi || true
+fi
+EOF
+
+# ---- Install default config from stage files/ ----
+install -d -m 0755 "${ROOTFS_DIR}/etc/default"
+install -m 0644 "${STAGE_DIR}/files/jack.default" "${ROOTFS_DIR}/etc/default/jack"
+
+# ---- Wrapper that uses env vars passed in (no config-file sourcing) ----
+cat > "${ROOTFS_DIR}/usr/local/bin/jack-start" <<'EOF'
+#!/bin/bash
+set -euo pipefail
+
+: "${JACK_DEVICE:=hw:0}"
+: "${JACK_RATE:=48000}"
+: "${JACK_PERIOD:=128}"
+: "${JACK_NPERIODS:=2}"
+: "${JACK_PRIORITY:=70}"
+: "${JACK_SYNC:=0}"
+: "${JACK_ALSA_MIDI:=raw}"
+: "${JACK_EXTRA_FLAGS:=}"
+
+# Avoid dbus/session reservation issues on minimal/headless systems
+export JACK_NO_AUDIO_RESERVATION=1
+
+# If JACK_DEVICE is hw:CARD=<NAME>[,...], wait until that ALSA card exists.
+card=""
+if [[ "${JACK_DEVICE}" =~ ^hw:CARD=([^,]+) ]]; then
+  card="${BASH_REMATCH[1]}"
+fi
+
+if [ -n "${card}" ]; then
+  # Wait up to ~20s for the card to appear (udev/USB timing)
+  for i in $(seq 1 80); do
+    if grep -qE "^[[:space:]]*[0-9]+[[:space:]]+\\[${card}[[:space:]]*\\]" /proc/asound/cards 2>/dev/null; then
+      break
+    fi
+    sleep 0.25
+  done
+fi
+
+sync_flag=""
+if [ "${JACK_SYNC}" = "1" ]; then
+  sync_flag="-S"
+fi
+
+midi_flag=""
+if [ -n "${JACK_ALSA_MIDI}" ]; then
+  midi_flag="-X ${JACK_ALSA_MIDI}"
+fi
+
+exec /usr/bin/jackd \
+  -P "${JACK_PRIORITY}" \
+  ${JACK_EXTRA_FLAGS} \
+  ${sync_flag} \
+  -d alsa -d "${JACK_DEVICE}" \
+  -r "${JACK_RATE}" -p "${JACK_PERIOD}" -n "${JACK_NPERIODS}" \
+  ${midi_flag}
+EOF
+chmod 0755 "${ROOTFS_DIR}/usr/local/bin/jack-start"
+
+# ---- systemd service ----
+cat > "${ROOTFS_DIR}/etc/systemd/system/jack.service" <<'EOF'
+[Unit]
+Description=JACK Audio Daemon (configurable)
+After=sound.target
+Wants=sound.target
+
+[Service]
+Type=simple
+User=pi
+Group=audio
+
+# Pull defaults from Debian-style config
+EnvironmentFile=-/etc/default/jack
+
+# Avoid dbus/session reservation issues on minimal/headless systems
+Environment=JACK_NO_AUDIO_RESERVATION=1
+
+# Let JACK get realtime + lock memory
+LimitRTPRIO=95
+LimitMEMLOCK=infinity
+
+# Don’t restart-storm forever if the DAC is unplugged
+Restart=on-failure
+RestartSec=2
+StartLimitIntervalSec=30
+StartLimitBurst=5
+
+ExecStart=/usr/local/bin/jack-start
+
+[Install]
+WantedBy=multi-user.target
+EOF
+chmod 0644 "${ROOTFS_DIR}/etc/systemd/system/jack.service"
+
+# Enable in the image
+on_chroot <<'EOF'
+systemctl daemon-reload
+systemctl enable jack.service
+EOF
