@@ -106,7 +106,7 @@ jobs:
           cd deploy
           IMG="$(ls -1 *.img.xz | head -n 1)"
           # Keep parts safely under GitHub's 2GiB release-asset limit
-          split -b 1900M "$IMG" "$IMG.part-"
+          sudo split -b 1900M "$IMG" "$IMG.part-"
           ls -lh "$IMG".part-*
 
       - name: Upload split image + checksums to release
