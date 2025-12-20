@@ -24,14 +24,17 @@ if getent passwd pi >/dev/null; then
 fi
 EOF
 
-# ---- Install default config from stage files/ ----
+# Resolve this sub-stage directory reliably (works even if STAGE_DIR points at stage2)
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+# --- Copy stage files into the target filesystem (host side, not chroot) ---
 install -d -m 0755 "${ROOTFS_DIR}/etc/default"
-install -m 0644 "${STAGE_DIR}/files/jack.default" \
+install -m 0644 "${SCRIPT_DIR}/files/jack.default" \
   "${ROOTFS_DIR}/etc/default/jack"
 
-# ---- Install systemd unit from stage files/ ----
+
 install -d -m 0755 "${ROOTFS_DIR}/etc/systemd/system"
-install -m 0644 "${STAGE_DIR}/files/jack.service" \
+install -m 0644 "${SCRIPT_DIR}/files/jack.service" \
   "${ROOTFS_DIR}/etc/systemd/system/jack.service"
 
 # ---- jack-start wrapper (no config-file sourcing; systemd provides env) ----
