@@ -4,11 +4,16 @@ on_chroot <<'EOF'
 set -e
 
 # Disable the first-boot interactive user configuration dialog.
-# We provision users/ssh via pi-gen, so this is redundant for headless images.
 systemctl disable userconfig.service 2>/dev/null || true
 systemctl mask userconfig.service 2>/dev/null || true
-
-# If a previous boot marked it failed, clear failure state (harmless at build time)
 systemctl reset-failed 2>/dev/null || true
-EOF
 
+# userconf-pi / rename-user leaves an sshd Banner drop-in behind if userconfig never runs.
+# Remove it so SSH logins don't show the "SSH may not work..." warning forever.
+rm -f /etc/ssh/sshd_config.d/rename_user.conf
+
+# (Optional hard override; use if something else re-adds a Banner later)
+# cat >/etc/ssh/sshd_config.d/99-no-banner.conf <<'EOM'
+# Banner none
+# EOM
+EOF
