@@ -127,7 +127,7 @@ gz)
 	"${DEPLOY_DIR}/${ARCHIVE_FILENAME}${IMG_SUFFIX}.img.gz"
 	;;
 xz)
-	xz --compress --force --threads 0 --memlimit-compress=50% -"${COMPRESSION_LEVEL}" \
+	xz --compress --force --threads 0 --memlimit-compress=0 -"${COMPRESSION_LEVEL}" \
 	--stdout "$IMG_FILE" > "${DEPLOY_DIR}/${ARCHIVE_FILENAME}${IMG_SUFFIX}.img.xz"
 	;;
 none | *)

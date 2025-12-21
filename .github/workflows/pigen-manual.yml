@@ -68,8 +68,8 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
-          GITHUB_RUN_ID:     ${{ github.run_id }}
-          GITHUB_SHA:        ${{ github.sha }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_SHA: ${{ github.sha }}
         run: |
           set -euxo pipefail
           sudo -E ./build.sh
@@ -99,23 +99,87 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          (
-            cd deploy
+          ( cd deploy
             sudo sha256sum *.img.xz | sudo tee SHA256SUMS.txt > /dev/null
           )
           sudo cat deploy/SHA256SUMS.txt
 
-      - name: Split image for GitHub release (<2GiB per part)
+      - name: Decide split vs single upload
+        id: assets
         shell: bash
         run: |
           set -euxo pipefail
           cd deploy
           IMG="$(ls -1 *.img.xz | head -n 1)"
-          # Keep parts safely under GitHub's 2GiB release-asset limit
-          sudo split -b 1900M "$IMG" "$IMG.part-"
+          echo "img=$IMG" >> "$GITHUB_OUTPUT"
+
+          # GitHub Release per-asset limit: 2 GiB (2,147,483,648 bytes)
+          LIMIT_BYTES=$((2 * 1024 * 1024 * 1024))
+          SIZE_BYTES="$(stat -c '%s' "$IMG")"
+          echo "size_bytes=$SIZE_BYTES" >> "$GITHUB_OUTPUT"
+
+          if [ "$SIZE_BYTES" -le "$LIMIT_BYTES" ]; then
+            echo "split=0" >> "$GITHUB_OUTPUT"
+            echo "Will upload single asset: $IMG ($SIZE_BYTES bytes)"
+          else
+            echo "split=1" >> "$GITHUB_OUTPUT"
+            echo "Will split: $IMG ($SIZE_BYTES bytes)"
+          fi
+
+      - name: Split image for GitHub release (only if needed)
+        if: steps.assets.outputs.split == '1'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd deploy
+          IMG="${{ steps.assets.outputs.img }}"
+          # Keep parts under GitHub's 2GiB release-asset limit (small safety margin)
+          sudo split -b 2000M "$IMG" "$IMG.part-"
           ls -lh "$IMG".part-*
 
-      - name: Upload split image + checksums to release
+      - name: Upload single image + checksums to release
+        if: steps.assets.outputs.split == '0'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Pi-gen Image ${{ steps.tag.outputs.tag }}
+          body: |
+            This release contains the pi-gen image.
+
+            Verify the download:
+            ```bash
+            sha256sum -c SHA256SUMS.txt
+            xz -t image.img.xz
+            ```
+
+            Then flash `image.img` after decompressing:
+            ```bash
+            xz -d image.img.xz
+            # flash image.img with Raspberry Pi Imager or dd
+            ```
+
+            ```powershell
+            # Read the expected .img.xz filename from SHA256SUMS.txt
+            $line = Get-Content .\SHA256SUMS.txt | Where-Object { $_ -match "\.img\.xz(\s|$)" } | Select-Object -First 1
+            if (-not $line) { throw "No .img.xz entry found in SHA256SUMS.txt" }
+
+            $parts = $line.Trim() -split "\s+"
+            $expectedHash = $parts[0].ToLower()
+            $target = ($parts[-1] -replace '^\*','')
+
+            $actualHash = (Get-FileHash ".\$target" -Algorithm SHA256).Hash.ToLower()
+            if ($actualHash -ne $expectedHash) { throw "SHA256 mismatch! expected=$expectedHash actual=$actualHash" }
+            Write-Host "SHA256 OK"
+            ```
+          files: |
+            deploy/*.img.xz
+            deploy/SHA256SUMS.txt
+          overwrite_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload split parts + checksums to release
+        if: steps.assets.outputs.split == '1'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
@@ -135,42 +199,35 @@ jobs:
             xz -d image.img.xz
             # flash image.img with Raspberry Pi Imager or dd
             ```
+
             ```powershell
             # Read the expected .img.xz filename from SHA256SUMS.txt
             # Supports formats like:
-            #   <hash>  filename
-            #   <hash> *filename
-            $line = Get-Content .\SHA256SUMS.txt |
-              Where-Object { $_ -match "\.img\.xz(\s|$)" } |
-              Select-Object -First 1
-            
-            if (-not $line) {
-              throw "No .img.xz entry found in SHA256SUMS.txt"
-            }
-            
+            #  filename
+            #  *filename
+            $line = Get-Content .\SHA256SUMS.txt | Where-Object { $_ -match "\.img\.xz(\s|$)" } | Select-Object -First 1
+            if (-not $line) { throw "No .img.xz entry found in SHA256SUMS.txt" }
+
             $parts = $line.Trim() -split "\s+"
             $expectedHash = $parts[0].ToLower()
             $target = ($parts[-1] -replace '^\*','')
-            
+
             Write-Host "Target: $target"
             Write-Host "Expected SHA256: $expectedHash"
-            
+
             # Reassemble split parts (fast + binary-safe)
             cmd /c "copy /b $target.part-* $target" | Out-Null
-            
+
             # Verify SHA256
             $actualHash = (Get-FileHash ".\$target" -Algorithm SHA256).Hash.ToLower()
-            if ($actualHash -ne $expectedHash) {
-              throw "SHA256 mismatch! expected=$expectedHash actual=$actualHash"
-            }
+            if ($actualHash -ne $expectedHash) { throw "SHA256 mismatch! expected=$expectedHash actual=$actualHash" }
             Write-Host "SHA256 OK"
-            
+
             # Test the .xz archive (requires xz.exe or 7z.exe in PATH)
             # xz -t ".\$target"
             # OR
             # 7z t ".\$target"
             ```
-
           files: |
             deploy/*.img.xz.part-*
             deploy/SHA256SUMS.txt
