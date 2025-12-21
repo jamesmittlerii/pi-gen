@@ -93,11 +93,14 @@ if hash syft 2>/dev/null; then
 		--source-version="${IMG_DATE}" \
 		-o spdx-json="${SBOM_FILE}"
 fi
+echo ">>> after syft  $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 ROOT_DEV="$(awk "\$2 == \"${ROOTFS_DIR}\" {print \$1}" /etc/mtab)"
 
 unmount "${ROOTFS_DIR}"
 zerofree "${ROOT_DEV}"
+echo ">>> after zerofree  $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
 
 unmount_image "${IMG_FILE}"
 
@@ -131,6 +134,7 @@ none | *)
 	cp "$IMG_FILE" "$DEPLOY_DIR/"
 ;;
 esac
+echo ">>> after compression  $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 if [ -f "${SBOM_FILE}" ]; then
 	xz -c "${SBOM_FILE}" > "$DEPLOY_DIR/$(basename "${SBOM_FILE}").xz"
