@@ -35,7 +35,5 @@ python3 -c "import jack, mido; print('[sfz-router] python imports OK')" || true
 test -f /opt/router/load_single.py
 echo "[sfz-router] Installed."
 
-# leave a breakcrumb saying we are in our first boot
-touch /etc/firstboot-pending
 CHROOT_EOF
 
