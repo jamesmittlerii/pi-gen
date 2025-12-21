@@ -26,6 +26,11 @@ git clone --depth=1 https://github.com/jamesmittlerii/router.git /opt/router
 # Ensure pi owns it (so edits/tests as pi are easy)
 chown -R pi:pi /opt/router
 
+# Precompile Python bytecode (best-effort; small startup win)
+# -q = quiet; -f = force; run as pi so __pycache__ ownership is sane
+echo "[sfz-router] Precompiling python bytecode..."
+su -s /bin/bash -c 'python3 -m compileall -q -f /opt/router || true' pi
+
 # Enable service
 systemctl daemon-reload
 systemctl enable router-loader.service
@@ -36,4 +41,3 @@ test -f /opt/router/load_single.py
 echo "[sfz-router] Installed."
 
 CHROOT_EOF
-
