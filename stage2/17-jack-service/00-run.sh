@@ -97,6 +97,9 @@ systemctl enable jack.service
 EOF
 
 # -- do the firstboot stuff
+install -m 0644 "${SCRIPT_DIR}/files/firstboot-clear.service" \
+  "${ROOTFS_DIR}/etc/systemd/system/firstboot-clear.service"
+  
 on_chroot <<'EOF'
 set -e
 touch /etc/firstboot-pending
