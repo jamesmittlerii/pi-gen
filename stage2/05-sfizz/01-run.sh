@@ -5,17 +5,12 @@ set -euo pipefail
 
 cd /usr/src
 
+# Fresh clone each build (includes needed CMake helpers via submodules)
 rm -rf sfizz-ui
-
-# IMPORTANT: pull submodules (contains the CMake helpers like BuildType/OptionEx)
 git clone --recurse-submodules --shallow-submodules https://github.com/sfztools/sfizz-ui.git
 cd sfizz-ui
 
-# If you prefer depth=1, keep it, but still recurse submodules:
-# git clone --depth=1 --recurse-submodules --shallow-submodules https://github.com/sfztools/sfizz-ui.git
-
 rm -rf build
-
 cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX=/usr \
@@ -28,6 +23,11 @@ cmake -S . -B build -G Ninja \
 
 cmake --build build -j"$(nproc)"
 cmake --install build
-ldconfig
+ldconfig || true
 
+# quick sanity (non-fatal)
+command -v sfizz_jack >/dev/null || true
+
+# cleanup build tree (prevents /usr/src leftovers)
+cd / && rm -rf /usr/src/sfizz-ui
 EOF
