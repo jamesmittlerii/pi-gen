@@ -95,3 +95,13 @@ on_chroot <<'EOF'
 systemctl daemon-reload
 systemctl enable jack.service
 EOF
+
+# -- do the firstboot stuff
+on_chroot <<'EOF'
+set -e
+touch /etc/firstboot-pending
+EOF
+
+on_chroot <<'EOF'
+systemctl enable firstboot-clear.service
+EOF
