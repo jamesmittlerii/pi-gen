@@ -6,6 +6,16 @@ install -m 644 files/50raspi		"${ROOTFS_DIR}/etc/apt/apt.conf.d/"
 
 install -m 644 files/console-setup   	"${ROOTFS_DIR}/etc/default/"
 
+install -m 644 files/50raspi            "${ROOTFS_DIR}/etc/apt/apt.conf.d/"
+
+# --- APT policy: no recommends/suggests ---
+install -m 644 files/99norecommends     "${ROOTFS_DIR}/etc/apt/apt.conf.d/"
+
+# --- dpkg policy: don’t install docs/man/locales ---
+install -d -m 0755 "${ROOTFS_DIR}/etc/dpkg/dpkg.cfg.d/"
+install -m 0644 files/01-nodoc          "${ROOTFS_DIR}/etc/dpkg/dpkg.cfg.d/"
+
+
 if [ -n "${PUBKEY_SSH_FIRST_USER}" ]; then
 	install -v -m 0700 -o 1000 -g 1000 \
 		-d "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.ssh"
