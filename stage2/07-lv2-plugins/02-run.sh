@@ -3,19 +3,20 @@
 on_chroot <<'CHROOT_EOF'
 set -euo pipefail
 
-echo "[x42] Installing x42 midi filter.lv2 build deps already handled by 00-packages"
+echo "[x42] Installing x42 midifilter.lv2 (build deps already handled by 00-packages)"
 
 SRC_BASE=/usr/src
 REPO_URL=https://github.com/x42/midifilter.lv2.git
 REPO_DIR="$SRC_BASE/midifilter.lv2"
 
 mkdir -p "$SRC_BASE"
+
+# Fresh clone
 rm -rf "$REPO_DIR"
-
 cd "$SRC_BASE"
-git clone --depth=1 "$REPO_URL"
-cd "$REPO_DIR"
+git clone --depth=1 "$REPO_URL" "$REPO_DIR"
 
+cd "$REPO_DIR"
 make -j"$(nproc)"
 make install PREFIX=/usr
 
@@ -30,6 +31,9 @@ fi
 
 echo "[midifilter] Installed. Bundles:"
 ls -la /usr/local/lib/lv2 2>/dev/null | grep -i eventblocker || true
-ls -la /usr/lib/lv2       2>/dev/null | grep -i eventblocker || true
+ls -la /usr/lib/lv2 2>/dev/null | grep -i eventblocker || true
+
+# cleanup build tree (prevents /usr/src leftovers)
+cd / && rm -rf "$REPO_DIR"
 
 CHROOT_EOF
