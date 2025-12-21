@@ -16,6 +16,9 @@ ldconfig || true
 command -v mod-host >/dev/null
 mod-host -h >/dev/null 2>&1 || true
 
+# cleanup build tree
+cd / && rm -rf /usr/src/mod-host
+
 # Show LV2 inventory size (useful for debugging)
 if command -v lv2ls >/dev/null; then
   lv2ls | head -n 5 || true
