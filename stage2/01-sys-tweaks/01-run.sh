@@ -6,7 +6,6 @@ install -m 644 files/50raspi		"${ROOTFS_DIR}/etc/apt/apt.conf.d/"
 
 install -m 644 files/console-setup   	"${ROOTFS_DIR}/etc/default/"
 
-install -m 644 files/50raspi            "${ROOTFS_DIR}/etc/apt/apt.conf.d/"
 
 # --- APT policy: no recommends/suggests ---
 install -m 644 files/99norecommends     "${ROOTFS_DIR}/etc/apt/apt.conf.d/"
