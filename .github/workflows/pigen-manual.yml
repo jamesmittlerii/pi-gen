@@ -113,8 +113,8 @@ jobs:
           IMG="$(ls -1 *.img.xz | head -n 1)"
           echo "img=$IMG" >> "$GITHUB_OUTPUT"
 
-          # GitHub release asset limit is 2 GiB per file; use a safety margin.
-          LIMIT_BYTES=$((2000 * 1024 * 1024))   # 2000MiB
+          # GitHub Release per-asset limit: 2 GiB (2,147,483,648 bytes)
+          LIMIT_BYTES=$((2 * 1024 * 1024 * 1024))
           SIZE_BYTES="$(stat -c '%s' "$IMG")"
           echo "size_bytes=$SIZE_BYTES" >> "$GITHUB_OUTPUT"
 
@@ -126,17 +126,19 @@ jobs:
             echo "Will split: $IMG ($SIZE_BYTES bytes)"
           fi
 
-      - name: Split image for GitHub release (<2GiB per part) only if needed
+      - name: Split image for GitHub release (only if needed)
         if: steps.assets.outputs.split == '1'
         shell: bash
         run: |
           set -euxo pipefail
           cd deploy
           IMG="${{ steps.assets.outputs.img }}"
+          # Keep parts under GitHub's 2GiB release-asset limit (small safety margin)
           sudo split -b 2000M "$IMG" "$IMG.part-"
           ls -lh "$IMG".part-*
 
-      - name: Upload image (single or split) + checksums to release
+      - name: Upload single image + checksums to release
+        if: steps.assets.outputs.split == '0'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
@@ -144,15 +146,50 @@ jobs:
           body: |
             This release contains the pi-gen image.
 
-            If the image was split (because it exceeded GitHub's per-asset size limit), reassemble on Linux/macOS:
+            Verify the download:
             ```bash
-            cat image*.img.xz.part-* > image.img.xz
             sha256sum -c SHA256SUMS.txt
             xz -t image.img.xz
             ```
 
-            If it was not split, just verify:
+            Then flash `image.img` after decompressing:
             ```bash
+            xz -d image.img.xz
+            # flash image.img with Raspberry Pi Imager or dd
+            ```
+
+            ```powershell
+            # Read the expected .img.xz filename from SHA256SUMS.txt
+            $line = Get-Content .\SHA256SUMS.txt | Where-Object { $_ -match "\.img\.xz(\s|$)" } | Select-Object -First 1
+            if (-not $line) { throw "No .img.xz entry found in SHA256SUMS.txt" }
+
+            $parts = $line.Trim() -split "\s+"
+            $expectedHash = $parts[0].ToLower()
+            $target = ($parts[-1] -replace '^\*','')
+
+            $actualHash = (Get-FileHash ".\$target" -Algorithm SHA256).Hash.ToLower()
+            if ($actualHash -ne $expectedHash) { throw "SHA256 mismatch! expected=$expectedHash actual=$actualHash" }
+            Write-Host "SHA256 OK"
+            ```
+          files: |
+            deploy/*.img.xz
+            deploy/SHA256SUMS.txt
+          overwrite_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload split parts + checksums to release
+        if: steps.assets.outputs.split == '1'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Pi-gen Image ${{ steps.tag.outputs.tag }}
+          body: |
+            This release contains the pi-gen image split into <2GiB parts due to GitHub Release asset limits.
+
+            Reassemble on Linux/macOS:
+            ```bash
+            cat image*.img.xz.part-* > image.img.xz
             sha256sum -c SHA256SUMS.txt
             xz -t image.img.xz
             ```
@@ -178,10 +215,8 @@ jobs:
             Write-Host "Target: $target"
             Write-Host "Expected SHA256: $expectedHash"
 
-            # If split parts exist, reassemble (fast + binary-safe)
-            if (Test-Path ".\$target.part-aa") {
-              cmd /c "copy /b $target.part-* $target" | Out-Null
-            }
+            # Reassemble split parts (fast + binary-safe)
+            cmd /c "copy /b $target.part-* $target" | Out-Null
 
             # Verify SHA256
             $actualHash = (Get-FileHash ".\$target" -Algorithm SHA256).Hash.ToLower()
@@ -194,10 +229,8 @@ jobs:
             # 7z t ".\$target"
             ```
           files: |
-            deploy/*.img.xz
             deploy/*.img.xz.part-*
             deploy/SHA256SUMS.txt
-          fail_on_unmatched_files: false
           overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
