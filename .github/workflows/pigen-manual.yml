@@ -101,7 +101,7 @@ jobs:
           set -euxo pipefail
           (
             cd deploy
-            sudo sha256sum *.img.xz > SHA256SUMS.txt
+            sudo sha256sum *.img.xz | sudo tee SHA256SUMS.txt > /dev/null
           )
           sudo cat deploy/SHA256SUMS.txt
 
