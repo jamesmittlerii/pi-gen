@@ -4,6 +4,8 @@ DEPLOY_COMPRESSION=xz
 PUBKEY_ONLY_SSH=1
 ENABLE_CLOUD_INIT=0
 
+TARGET_HOSTNAME=rpi5
+
 WPA_COUNTRY=US
 
 PI_GEN_REPO=https://github.com/jamesmittlerii/pi-gen
