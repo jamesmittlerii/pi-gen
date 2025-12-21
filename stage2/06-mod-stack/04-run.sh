@@ -48,12 +48,14 @@ PATH="$MODUI_DIR/.venv/bin:$PATH" make -C "$MODUI_DIR/utils"
 # Ensure mod-ui can write its runtime data as user pi
 install -d -m 0755 /opt/mod-ui/data
 chown -R pi:pi /opt/mod-ui
+chown -R pi:pi /var/modep
 
 # Systemd service (headless controller)
 cat >/etc/systemd/system/mod-ui.service <<SERVICE
 [Unit]
 Description=MOD UI (headless API)
-After=network.target
+After=network-online.target jack.service mod-host.service
+Wants=network-online.target
 
 [Service]
 Type=simple
@@ -70,5 +72,7 @@ Group=audio
 WantedBy=multi-user.target
 SERVICE
 
+rm -rf /root/.cache/pip
+systemctl daemon-reload
 systemctl disable mod-ui.service
 EOF
