@@ -47,6 +47,13 @@ rm -f "${ROOTFS_DIR}/etc/subgid-"
 rm -f "${ROOTFS_DIR}"/var/cache/debconf/*-old
 rm -f "${ROOTFS_DIR}"/var/lib/dpkg/*-old
 
+# try to clear out some apt stuff
+echo "[cleanup] apt caches"
+apt-get clean
+rm -rf /var/lib/apt/lists/*
+
+
+
 rm -f "${ROOTFS_DIR}"/usr/share/icons/*/icon-theme.cache
 
 rm -f "${ROOTFS_DIR}/var/lib/dbus/machine-id"
