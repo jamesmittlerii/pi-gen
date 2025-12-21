@@ -99,7 +99,10 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          sudo sha256sum deploy/*.img.xz | sudo tee deploy/SHA256SUMS.txt
+          (
+            cd deploy
+            sudo sha256sum *.img.xz > SHA256SUMS.txt
+          )
           sudo cat deploy/SHA256SUMS.txt
 
       - name: Split image for GitHub release (<2GiB per part)
