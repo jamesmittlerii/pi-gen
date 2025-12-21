@@ -9,6 +9,10 @@ MODUI_REPO=https://github.com/mod-audio/mod-ui.git
 MODUI_PORT=8888
 MODUI_BIND=127.0.0.1
 
+export HOME=/root
+export XDG_CACHE_HOME=/root/.cache
+export PIP_CACHE_DIR=/tmp/pip-cache
+
 mkdir -p /var/modep/pedalboards
 
 # (Re)install mod-ui repo
@@ -41,6 +45,9 @@ fi
 
 PATH="$MODUI_DIR/.venv/bin:$PATH" make -C "$MODUI_DIR/utils"
 
+# Ensure mod-ui can write its runtime data as user pi
+install -d -m 0755 /opt/mod-ui/data
+chown -R pi:pi /opt/mod-ui
 
 # Systemd service (headless controller)
 cat >/etc/systemd/system/mod-ui.service <<SERVICE
@@ -63,5 +70,5 @@ Group=audio
 WantedBy=multi-user.target
 SERVICE
 
-systemctl enable mod-ui.service
+systemctl disable mod-ui.service
 EOF
